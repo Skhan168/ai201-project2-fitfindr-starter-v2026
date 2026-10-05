@@ -93,7 +93,7 @@
      The grader checks your code against what you claim here, so the file and
      function have to be real. -->
 
-**Branch rule:**
+**Branch rule:** If search_listings returns an empty list, put a message in session["error"] naming what to change (size, price, or keywords), leave session["fit_card"] as None, and stop. Otherwise set session["selected_item"] to the first result and call suggest_outfit.
 
 **Where it lives:** `agent.py::run_agent`
 

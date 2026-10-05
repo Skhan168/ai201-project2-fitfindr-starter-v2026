@@ -29,6 +29,8 @@ tool calls and returns a fit card — in at least 4 of 5 tries.
      "my search is a plain keyword match and some phrasings will miss" is a
      real answer. -->
 
+My search will be a plain keyword match on title, description, and style_tags, so some phrasings will miss. The data has 40 listings, and sizes aren't uniform ("S/M", "W30 L30", "XL (oversized)"), so a size filter can miss a real match. The fit card and outfit steps also call the model, which can fail on a rate limit. I picked 4 of 5 so one miss is allowed, but not more.
+
 ---
 
 ## 2. An impossible query stops before the second tool
@@ -39,6 +41,9 @@ Given a query that matches no listings, the agent stops before calling
 **Why this target:**
 <!-- Why is 5 of 5 reasonable here when criterion 1 isn't? What's different
      about this path? -->
+
+This path has no model call before the stop. It's one if-check on an empty list from search_listings, so the same input should give the same result every time. If the loop reaches suggest_outfit on an empty search, the branch is broken, so I allow zero misses. The stop message is a fixed string built in agent.py, not written by the model, so it names what to change (size, max price, or keywords) the same way every time.
+
 
 ---
 

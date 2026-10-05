@@ -59,24 +59,24 @@
 
 ### `search_listings`
 
-- **What it does:**
-- **Inputs:** <!-- name and type each: `max_price` (float), not "a price" -->
-- **Returns:**
-- **When it has nothing:**
+- **What it does:** Filters the listings file by keyword, size, and max price.
+- **Inputs:** `description` (str), `size` (str), `max_price` (float)
+- **Returns:** A list of listing dicts, each with id, title, description, category, style_tags, size, condition, price, colors, brand, platform.
+- **When it has nothing:** Returns an empty list `[]`, never None.
 
 ### `suggest_outfit`
 
-- **What it does:**
-- **Inputs:**
-- **Returns:**
-- **When it has nothing:**
+- **What it does:** Uses the model to suggest outfits that pair the new item with the user's wardrobe.
+- **Inputs:** `new_item` (dict, one listing), `wardrobe` (dict with key "items" holding a list of wardrobe item dicts)
+- **Returns:** A str of outfit ideas.
+- **When it has nothing:** If `wardrobe["items"]` is an empty list, returns a str of general styling advice for the item.
 
 ### `create_fit_card`
 
-- **What it does:**
-- **Inputs:**
-- **Returns:**
-- **When it has nothing:**
+- **What it does:** Uses the model to write a short caption someone would post.
+- **Inputs:** `outfit` (str), `new_item` (dict, one listing)
+- **Returns:** A str caption.
+- **When it has nothing:** If `outfit` is empty, returns a short caption written from `new_item` alone.
 
 ---
 

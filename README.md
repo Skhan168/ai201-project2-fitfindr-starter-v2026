@@ -59,10 +59,11 @@
 
 ### `search_listings`
 
-- **What it does:** Filters the listings file by keyword, size, and max price.
-- **Inputs:** `description` (str), `size` (str), `max_price` (float)
+- **What it does:** Searches the listings file by keyword and ranks the matches, optionally filtering by size and max price.
+- **Inputs:** `description` (str), `size` (str or None), `max_price` (float or None)
 - **Returns:** A list of listing dicts, each with id, title, description, category, style_tags, size, condition, price, colors, brand, platform.
 - **When it has nothing:** Returns an empty list `[]`, never None.
+- **How it ranks:** Keyword match over title, description, category, style tags, colors, and brand, with extra weight for title matches. Price only breaks ties. A size like "M" also matches combined sizes such as "S/M".
 
 ### `suggest_outfit`
 
@@ -120,18 +121,19 @@ $ python app.py ask '...'
 **The three tools, tested one at a time**
 
 ```
-$ python -c "from tools import search_listings; print(search_listings('graphic tee', max_price=30))"
+$ python -c "from tools import search_listings; r = search_listings('graphic tee', max_price=30); print(len(r), [(x['id'], x['title'], x['price']) for x in r])"
+7 [('lst_006', 'Graphic Tee — 2003 Tour Bootleg Style', 24.0), ('lst_002', 'Y2K Baby Tee — Butterfly Print', 18.0), ('lst_033', 'Vintage Band Tee — Faded Grey', 19.0), ('lst_017', 'Mesh Long-Sleeve Top — Black', 15.0), ('lst_015', 'Vintage Graphic Hoodie — Faded Black', 26.0), ('lst_012', 'Oversized Crewneck Sweatshirt — Vintage Navy', 20.0), ('lst_011', 'Low-Rise Cargo Pants — Khaki', 27.0)]
 
 ```
 
 ```
-$ python -c "from tools import suggest_outfit; ..."
-
+$ python -c "from tools import search_listings; r = search_listings('tee', size='M'); print([(x['id'], x['size']) for x in r])"
+[('lst_002', 'S/M'), ('lst_017', 'S/M')]
 ```
 
 ```
-$ python -c "from tools import create_fit_card; ..."
-
+$ python -c "from tools import search_listings; print(search_listings('designer ballgown', 'XXS', 5))"
+[]
 ```
 
 ---
@@ -147,9 +149,9 @@ $ python -c "from tools import create_fit_card; ..."
 
 **Moment 1**
 
-- *What I asked for:*
-- *What came back:*
-- *What I changed:*
+- *What I asked for:* A `search_listings` implementation that matches a description against the listings, filters by size and max price, and returns an empty list when nothing matches.
+- *What came back:* Working keyword search with stopwords, stemming, and a price tie-break. When I ran `search_listings('graphic tee', max_price=30)`, "Mesh Long-Sleeve Top — Black" ranked first and the real "Graphic Tee — 2003 Tour Bootleg Style" ranked fourth. Many listings tied on score, and the tie went to the cheapest.
+- *What I changed:* I added a title-match bonus to the score, so title matches count extra. The graphic tee now ranks first and the mesh top fourth. Price only breaks ties.
 
 **Moment 2**
 

@@ -24,6 +24,28 @@ import config  # noqa: F401 — you'll use this in search_listings
 from generate import generate
 from utils.data_loader import load_listings
 
+import re
+
+_STOPWORDS = {
+    "a", "an", "the", "and", "or", "for", "with", "in", "on", "of", "to",
+    "under", "over", "below", "size", "at", "my", "me", "i", "want", "need",
+    "looking", "find", "some", "that", "is", "it",
+}
+_SIZE_ALIASES = {"small": "s", "medium": "m", "large": "l", "xlarge": "xl"}
+
+
+def _tokens(text: str) -> list[str]:
+    return re.findall(r"[a-z0-9]+", text.lower())
+
+
+def _stem(word: str) -> str:
+    if len(word) > 3 and word.endswith("s") and not word.endswith("ss"):
+        return word[:-1]
+    return word
+
+
+def _size_tokens(size: str) -> set[str]:
+    return {_SIZE_ALIASES.get(t, t) for t in _tokens(size)}
 
 # ── Tool 1: search_listings ───────────────────────────────────────────────────
 
@@ -78,8 +100,39 @@ def search_listings(
     Test it from a terminal before you move on:
         python -c "from tools import search_listings; print(search_listings('graphic tee', max_price=30))"
     """
-    # TODO: replace this with your implementation
-    return []
+
+    query_terms = {
+    _stem(t) for t in _tokens(description)
+    if t not in _STOPWORDS and not t.isdigit()
+    }
+    if not query_terms:
+        return []
+
+    wanted_size = _size_tokens(size) if size and size.strip() else None
+
+    scored = []
+    for item in load_listings():
+        if max_price is not None and item["price"] > max_price:
+            continue
+        if wanted_size and not wanted_size <= _size_tokens(item["size"]):
+            continue
+
+        haystack = " ".join([
+            item["title"],
+            item["description"],
+            item["category"],
+            " ".join(item["style_tags"]),
+            " ".join(item["colors"]),
+            item["brand"] or "",
+        ])
+        item_terms = {_stem(t) for t in _tokens(haystack)}
+        title_terms = {_stem(t) for t in _tokens(item["title"])}
+        score = len(query_terms & item_terms) + len(query_terms & title_terms)
+        if score > 0:
+            scored.append((score, item))
+
+    scored.sort(key=lambda pair: (-pair[0], pair[1]["price"]))
+    return [item for _, item in scored[: config.SEARCH_RESULT_LIMIT]]
 
 
 # ── Tool 2: suggest_outfit ────────────────────────────────────────────────────

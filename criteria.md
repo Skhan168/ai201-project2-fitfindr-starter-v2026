@@ -59,9 +59,11 @@ This path has no model call before the stop. It's one if-check on an empty list 
      compares session["selected_item"] against what actually reached
      suggest_outfit is the shape you're after. -->
 
+     In 5 of 5 tries on a matching query, the id in session["selected_item"] equals the id of the item received by suggest_outfit, and that id is the first result returned by search_listings.
 
 
-**Why this target:**
+
+**Why this target:** Passing the item along is plain code with no model call, so it should work every time. A mismatch means a bug in my loop, not random model variation. I set 5 of 5 because there is no reason for this to fail occasionally.
 
 
 
@@ -80,9 +82,10 @@ This path has no model call before the stop. It's one if-check on an empty list 
      sentence? A card longer than a caption anyone would post? Any of those can
      be turned into a number. -->
 
+     For 5 runs of create_fit_card on the same item, at least 4 of 5 captions are under 300 characters, include the item's price, and are not empty. The 5 captions are not all word-for-word identical.
 
 
-**Why this target:**
+**Why this target:** The caption comes from a model, so the wording changes and I can't check for exact text. I check things I can count instead: length, price, and not empty. I picked 4 of 5 because the model sometimes leaves out the price. The "not all identical" check catches a cache or a temperature of 0 (CACHE_ENABLED and TEMPERATURE in config.py).
 
 
 
@@ -96,10 +99,12 @@ This path has no model call before the stop. It's one if-check on an empty list 
      wardrobe path, what happens when the model can't be reached, whether the
      search respects a price ceiling — anything, as long as it names a number
      or an observable outcome. -->
+     
+     For 5 queries that include a price ceiling, every listing returned by search_listings has price <= max_price, in 5 of 5 queries.
 
 
 
-**Why this target:**
+**Why this target:** The price filter is a plain number comparison on a float field, with no model involved. A listing over the ceiling is always a bug, so I allow zero misses. A user who sets a budget needs the ceiling respected every time.
 
 
 

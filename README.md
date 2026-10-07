@@ -312,17 +312,66 @@ that produced it:
 **Happy path**
 
 ```
-
+$ python app.py ask 'vintage graphic tee under $30' --trace
+[1] search_listings (via MCP)
+      in:  {'description': 'vintage graphic tee', 'size': None, 'max_price': 30.0}
+      out: 10 items: Vintage Band Tee — Faded Grey, Graphic Tee — 2003 Tour Bootleg Style, Y2K Baby Tee — Butterfly Print … +7 more
+[2] suggest_outfit
+      in:  Vintage Band Tee — Faded Grey, wardrobe of 10 items
+      out: Hey there! Ooh, a faded grey vintage band tee for $19 is an absolute Depop score—that worn-in charcoal look is…
+[3] create_fit_card
+      in:  outfit text + Vintage Band Tee — Faded Grey
+      out: Scored this vintage band tee on Depop for just $19 and the worn-in charcoal wash is literally unbeatable. Toss…
 ```
 
 **Empty search**
 
 ```
+$ python app.py ask 'designer ballgown size XXS under $5' --trace
+[1] search_listings (via MCP)
+      in:  {'description': 'designer ballgown', 'size': 'XXS', 'max_price': 5.0}
+      out: [] (empty)
+      →    branch: empty, stopping
 
+  No listings matched 'designer ballgown', size XXS, under $5.00. Try a different size, a higher price limit, or different keywords.
 ```
 
 **On the MCP move:** I moved `search_listings` into `mcp_server.py`, registered with `@mcp.tool()` and a description that names the units and types and states the empty case (`[]`, never an error). In `agent.py::run_agent` I replaced the direct `search_listings(...)` call with `call_tool("search_listings", {...})` from `mcp_client.py`. Nothing behaved differently: `call_tool('search_listings', {'description': 'graphic tee', 'max_price': 30})` returned a `list` of 7 dicts with ids `lst_006, lst_002, lst_033, lst_017, lst_015, lst_012, lst_011`, the same count and order as the direct call. The empty-search branch still fires for the ballgown query and `fit_card` stays `None`.
 
+**Failure modes**
+
+~~~ Empty search (query the data can't match):
+$ python app.py ask 'designer ballgown size XXS under $5'
+
+  No listings matched 'designer ballgown', size XXS, under $5.00. Try a different size, a higher price limit, or different keywords.
+
+Empty wardrobe (returns general styling advice, no crash):
+~~~
+$ python app.py ask 'baggy cargo pants under $40' --empty-wardrobe
+(running with an empty wardrobe)
+ [1] search_listings (via MCP)
+      in:  {'description': 'baggy cargo pants', 'size': None, 'max_price': 40.0}
+      out: 3 items: Low-Rise Cargo Pants — Khaki, Corduroy Wide-Leg Pants — Rust, Baggy Carpenter Jeans — Dark Wash
+ [2] suggest_outfit
+      in:  Low-Rise Cargo Pants — Khaki, wardrobe of 0 items
+      out: Hey bestie! Oh, those low-rise khaki cargos are an absolute Y2K dream, and at $27 in fair condition, they’ve g…
+ [3] create_fit_card
+      in:  outfit text + Low-Rise Cargo Pants — Khaki
+      out: Scored these khaki low-rise cargos on Poshmark for $27 and I am officially ready for my 2000s off-duty model e…
+      ~~~
+
+
+Model unavailable (one character of the key changed in .env, restored afterwards):
+ ~~~
+$ python app.py ask 'oversized denim jacket under $50'
+ [1] search_listings (via MCP)
+      in:  {'description': 'oversized denim jacket', 'size': None, 'max_price': 50.0}
+      out: 10 items: Denim Jacket — Light Wash, Cropped, Oversized Crewneck Sweatshirt — Vintage Navy, Oversized College Crewneck — Faded Red … +7 more
+ [2] model call failed
+      →    branch: ModelUnavailable, stopping
+
+  Found a listing, but the styling model couldn't be reached, so there's no outfit or fit card yet. Check that the API key in .env is correct and that you're online, then run the query again. (Details: The model rejected your API key. Check GEMINI_API_KEY in your .env file, or create a fresh key at aistudio.google.com.)
+~~~
 
 
 ---

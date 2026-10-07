@@ -97,9 +97,9 @@ A user types a request like "vintage graphic tee under $30, size M". FitFindr se
 
 **Where it lives:** `agent.py::run_agent`
 
-**How the query is parsed:** <!-- regex, string splitting, or asking the model — say which -->
+**How the query is parsed:**  Regex, in agent.py::_parse_query. One pattern finds a price after words like "under", "below", or "up to" (falling back to any $ amount). Another finds "size" followed by a word. Whatever text is left becomes the description. 
 
-**What moves through the session:** <!-- which fields, in what order -->
+**What moves through the session:** query → parsed (description, size, max_price) → search_results → selected_item (first result) → outfit_suggestion → fit_card. On an empty search, error is set and the run stops, so selected_item, outfit_suggestion, and fit_card stay None. 
 
 ---
 
@@ -113,9 +113,35 @@ A user types a request like "vintage graphic tee under $30, size M". FitFindr se
 **One full query**
 
 ```
-$ python app.py ask '...'
+$ python app.py ask 'vintage graphic tee under $30'
+
+Found:    Vintage Band Tee — Faded Grey — $19.0 on depop
+
+Outfit:   Hey there! Ooh, a faded grey vintage band tee for $19 is an absolute Depop score—that worn-in charcoal look is unbeatable. 
+
+Here are two effortless ways to style it using pieces you already own:
+
+**Outfit 1: 90s Streetwear Edge**
+Pair the band tee with your **Baggy straight-leg jeans, dark wash**. Add the **Black combat boots** for that classic grunge texture, and throw on the **Vintage black denim jacket** over top. Finish it with the **Black crossbody bag** for an easy, everyday downtown look.
+
+**Outfit 2: High-Low Contrast**
+Tuck the tee into your **Wide-leg khaki trousers** to play with proportions. Layer the **Black cropped zip hoodie** open over it, and step into your **Chunky white sneakers** for a cool mix of streetwear and minimal earth tones. 
+
+Which vibe are you leaning toward? Total steal either way!
+
+  Fit card: Scored this vintage band tee on Depop for just $19 and the worn-in charcoal wash is literally unbeatable.Tossed it on with baggy denim and combat boots for the ultimate lazy 90s grunge uniform. Safe to say I'll be living in this top all fall.
+
+0 model calls this session, 2 served from cache
+```
 
 ```
+$ python app.py ask 'designer ballgown size XXS under $5'
+
+  No listings matched 'designer ballgown', size XXS, under $5.00. Try a different size, a higher price limit, or different keywords.
+
+0 model calls this session
+```
+
 
 **The three tools, tested one at a time**
 
@@ -200,9 +226,9 @@ Scored these vintage Levi's 501s on Depop for just $38.00 and the fit is genuine
 
 **Moment 2**
 
-- *What I asked for:*
-- *What came back:*
-- *What I changed:*
+- *What I asked for:* A query parser for agent.py that pulls a description, size, and max price out of plain text like "vintage graphic tee under $30, size M", and a one-line terminal command to test it.
+- *What came back:* A regex parser that worked, but the test command used `\$` to escape the dollar sign. PowerShell doesn't treat that as an escape, so the first runs failed with "SyntaxError: '(' was never closed" and the price was lost.
+- *What I changed:* I switched the test command to use a backtick before the `$` and single quotes inside the double-quoted string. The parser then returned the right description, size, and max_price for both test queries.
 
 <!-- ═══════════════════════ UNIT 4 — THE TEST ═══════════════════════
 

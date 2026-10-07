@@ -14,6 +14,7 @@ Build and test your three tools in `tools.py` first. Then come here.
 """
 
 import config
+import re
 import trace
 from tools import search_listings, suggest_outfit, create_fit_card
 from generate import ModelUnavailable
@@ -45,6 +46,28 @@ def new_session(query: str, wardrobe: dict) -> dict:
         "fit_card": None,            # what create_fit_card returned
         "error": None,               # set when the run ended early
     }
+
+
+def _parse_query(query: str) -> dict:
+    text = query.strip()
+    max_price = None
+    size = None
+
+    price_match = (
+        re.search(r"(?:under|below|less than|up to|max|at most)\s*\$?\s*(\d+(?:\.\d+)?)", text, re.I)
+        or re.search(r"\$\s*(\d+(?:\.\d+)?)", text)
+    )
+    if price_match:
+        max_price = float(price_match.group(1))
+        text = text.replace(price_match.group(0), " ")
+
+    size_match = re.search(r"\bsize\s+([a-z0-9/]+)", text, re.I)
+    if size_match:
+        size = size_match.group(1)
+        text = text.replace(size_match.group(0), " ")
+
+    description = re.sub(r"\s+", " ", text).strip(" ,.")
+    return {"description": description, "size": size, "max_price": max_price}
 
 
 # ── planning loop ─────────────────────────────────────────────────────────────
@@ -107,9 +130,42 @@ def run_agent(query: str, wardrobe: dict) -> dict:
     """
     session = new_session(query, wardrobe)
 
-    # TODO: delete these two lines and build the loop.
-    session["error"] = "The planning loop isn't built yet — see the TODO in agent.py."
-    return session
+    count = 0
+    while True:
+        count += 1
+        trace.check_iterations(count)
+
+        parsed = _parse_query(query)
+        session["parsed"] = parsed
+
+        results = search_listings(
+            parsed["description"], parsed["size"], parsed["max_price"]
+        )
+        session["search_results"] = results
+
+        if not results:
+            tried = [f"'{parsed['description']}'"]
+            if parsed["size"]:
+                tried.append(f"size {parsed['size']}")
+            if parsed["max_price"] is not None:
+                tried.append(f"under ${parsed['max_price']:.2f}")
+            session["error"] = (
+                f"No listings matched {', '.join(tried)}. Try a different size, "
+                "a higher price limit, or different keywords."
+            )
+            return session
+
+        session["selected_item"] = results[0]
+
+        session["outfit_suggestion"] = suggest_outfit(
+            session["selected_item"], session["wardrobe"]
+        )
+
+        session["fit_card"] = create_fit_card(
+            session["outfit_suggestion"], session["selected_item"]
+        )
+
+        return session
 
 
 # ── running it directly ───────────────────────────────────────────────────────

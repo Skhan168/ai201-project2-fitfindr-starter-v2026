@@ -267,7 +267,10 @@ def create_fit_card(outfit: str, new_item: dict) -> str:
         "Write a two-to-four sentence social media caption, as if the person "
         "who just thrifted this item were posting it. Sound like a real post, "
         "not a product description. Mention the item name, its price, and the "
-        "platform once each, and be specific about the vibe. No hashtag spam.\n\n"
+        "platform once each, and be specific about the vibe. No hashtag spam.\n"
+        "Hard rules: write the price as digits with a dollar sign, exactly as "
+        f"${float(new_item.get('price', 0)):.2f} (never spell it out in words), "
+        "and keep the whole caption under 250 characters.\n\n"
         f"Item: {item_text}\n"
     )
     if has_outfit:

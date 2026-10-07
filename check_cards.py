@@ -1,6 +1,6 @@
 import glob, re
 
-path = sorted(glob.glob("results/run_*_before.md"))[-1]
+path = sorted(glob.glob("results/run_*_after.md"))[-1]
 text = open(path, encoding="utf-8").read()
 
 sec3 = text.split("### state: selected item reaches suggest_outfit")[1].split("### fit card")[0]

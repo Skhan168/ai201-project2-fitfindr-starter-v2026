@@ -139,12 +139,19 @@ def run_agent(query: str, wardrobe: dict) -> dict:
         parsed = _parse_query(query)
         session["parsed"] = parsed
 
-        results = call_tool("search_listings", {
+        search_args = {
             "description": parsed["description"],
             "size": parsed["size"],
             "max_price": parsed["max_price"],
-        })
+        }
+        results = call_tool("search_listings", search_args)
         session["search_results"] = results
+        trace.step(
+            "search_listings (via MCP)",
+            inputs=str(search_args),
+            returned=results,
+            note="" if results else "branch: empty, stopping",
+        )
 
         if not results:
             tried = [f"'{parsed['description']}'"]
@@ -160,16 +167,36 @@ def run_agent(query: str, wardrobe: dict) -> dict:
 
         session["selected_item"] = results[0]
 
-        session["outfit_suggestion"] = suggest_outfit(
-            session["selected_item"], session["wardrobe"]
-        )
+        try:
+            session["outfit_suggestion"] = suggest_outfit(
+                session["selected_item"], session["wardrobe"]
+            )
+            trace.step(
+                "suggest_outfit",
+                inputs=f"{session['selected_item'].get('title')}, wardrobe of "
+                       f"{len(session['wardrobe'].get('items', []))} items",
+                returned=session["outfit_suggestion"],
+            )
 
-        session["fit_card"] = create_fit_card(
-            session["outfit_suggestion"], session["selected_item"]
-        )
+            session["fit_card"] = create_fit_card(
+                session["outfit_suggestion"], session["selected_item"]
+            )
+            trace.step(
+                "create_fit_card",
+                inputs=f"outfit text + {session['selected_item'].get('title')}",
+                returned=session["fit_card"],
+            )
+        except ModelUnavailable as exc:
+            session["error"] = (
+                "Found a listing, but the styling model couldn't be reached, so "
+                "there's no outfit or fit card yet. Check that the API key in .env "
+                "is correct and that you're online, then run the query again. "
+                f"(Details: {exc})"
+            )
+            session["fit_card"] = None
+            trace.step("model call failed", note="branch: ModelUnavailable, stopping")
 
         return session
-
 
 # ── running it directly ───────────────────────────────────────────────────────
 

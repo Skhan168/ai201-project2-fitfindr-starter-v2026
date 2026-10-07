@@ -321,10 +321,7 @@ that produced it:
 
 ```
 
-**On the MCP move:** <!-- what changed in your code, and whether anything
-behaved differently afterwards. If the rewire didn't work, say exactly where it
-broke — the error text and the last thing that worked. That earns the point in
-full. -->
+**On the MCP move:** I moved `search_listings` into `mcp_server.py`, registered with `@mcp.tool()` and a description that names the units and types and states the empty case (`[]`, never an error). In `agent.py::run_agent` I replaced the direct `search_listings(...)` call with `call_tool("search_listings", {...})` from `mcp_client.py`. Nothing behaved differently: `call_tool('search_listings', {'description': 'graphic tee', 'max_price': 30})` returned a `list` of 7 dicts with ids `lst_006, lst_002, lst_033, lst_017, lst_015, lst_012, lst_011`, the same count and order as the direct call. The empty-search branch still fires for the ballgown query and `fit_card` stays `None`.
 
 
 

@@ -39,8 +39,7 @@
 
 ## What This Does
 
-<!-- Three or four sentences: what a user asks for, and what they get back. -->
-
+A user types a request like "vintage graphic tee under $30, size M". FitFindr searches a set of secondhand listings, picks the best match, suggests one or two outfits that pair it with pieces from the user's wardrobe, and writes a short caption they could post about the find. If nothing matches, it tells the user what to change instead of guessing.
 
 
 ---

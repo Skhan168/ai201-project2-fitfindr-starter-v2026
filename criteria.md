@@ -28,7 +28,7 @@ Given a query that matches at least one listing, the agent completes all three t
      "my search is a plain keyword match and some phrasings will miss" is a
      real answer. -->
 
-My search will be a plain keyword match on title, description, and style_tags, so some phrasings will miss. The data has 40 listings, and sizes aren't uniform ("S/M", "W30 L30", "XL (oversized)"), so a size filter can miss a real match. The fit card and outfit steps also call the model, which can fail on a rate limit. I picked 4 of 5 so one miss is allowed, but not more.
+My search will be a plain keyword match on title, description, category, style tags, colors, and brand. The data has 40 listings, and sizes aren't uniform ("S/M", "W30 L30", "XL (oversized)"), so a size filter can miss a real match. The fit card and outfit steps also call the model, which can fail on a rate limit. I picked 4 of 5 so one miss is allowed, but not more.
 
 ---
 

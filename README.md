@@ -250,11 +250,11 @@ Scored these vintage Levi's 501s on Depop for just $38.00 and the fit is genuine
 
 | Criterion | Target | Try 1 | Try 2 | Try 3 | Try 4 | Try 5 | Verdict |
 |---|---|---|---|---|---|---|---|
-| 1.  |  |  |  |  |  |  |  |
-| 2.  |  |  |  |  |  |  |  |
-| 3.  |  |  |  |  |  |  |  |
-| 4.  |  |  |  |  |  |  |  |
-| 5.  |  |  |  |  |  |  |  |
+| 1. A matching query completes all three tools | 4 of 5 | PASS | PASS | PASS | PASS | PASS | MET (5/5) |
+| 2. An impossible query stops before the second tool | 5 of 5 | PASS | PASS | PASS | PASS | PASS | MET (5/5) |
+| 3. selected_item id matches what suggest_outfit received | 5 of 5 | PASS | PASS | PASS | PASS | PASS | MET (5/5) |
+| 4. Fit card under 300 chars, has price, not empty | 4 of 5 | PASS | PASS | FAIL | FAIL | FAIL | MISSED (2/5) |
+| 5. Every result under the price ceiling | 5 of 5 | PASS | PASS | PASS | PASS | PASS | MET (5/5) |
 
 **Real output from one try**, pasted as text, naming the file and function
 that produced it:

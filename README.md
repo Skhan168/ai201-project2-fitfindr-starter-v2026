@@ -230,6 +230,12 @@ Scored these vintage Levi's 501s on Depop for just $38.00 and the fit is genuine
 - *What came back:* A regex parser that worked, but the test command used `\$` to escape the dollar sign. PowerShell doesn't treat that as an escape, so the first runs failed with "SyntaxError: '(' was never closed" and the price was lost.
 - *What I changed:* I switched the test command to use a backtick before the `$` and single quotes inside the double-quoted string. The parser then returned the right description, size, and max_price for both test queries.
 
+**Moment 3**
+
+- *What I asked for:* A diagnosis of why criterion 4 (the fit card) missed in three of five tries.
+- *What came back:* The cause was in my create_fit_card prompt: it said to mention the price but not how to write it, and limited length by sentence count and not characters.
+- *What I changed:* I added one instruction to the prompt (price as digits like $30.00, under 250 characters) and reran all five criteria. Criterion 4 went from 2 of 5 to 5 of 5.
+
 <!-- ═══════════════════════ UNIT 4 — THE TEST ═══════════════════════
 
      Don't fill these in during unit 3.
@@ -260,7 +266,26 @@ Scored these vintage Levi's 501s on Depop for just $38.00 and the fit is genuine
 that produced it:
 
 ```
+Criterion 1 (agent.py::run_agent, via run_eval.py), graphic tee query:
+try 1: completed — fit card 191 chars
 
+Criterion 2 (agent.py::run_agent), ballgown query:
+      out: [] (empty)
+      →    branch: empty, stopping
+try 1: stopped early — No listings matched 'designer ballgown', size XXS, under $5.
+
+Criterion 3 (agent.py::run_agent, read from results file), track jacket query:
+  try 1: 90s Track Jacket — Navy/White Stripe ($45.0, poshmark)
+
+Criterion 4 (tools.py::create_fit_card), slip dress, before the fix:
+  try 3: 234 chars | has $30: False | FAIL
+    Found the ultimate 90s silk slip dress on Depop for just thirty bucks and I am obsessed. Threw an oversized grey crewneck right over it with some combat boots for that effortless grunge vibe. Absolute steal and literally so versatile.
+  try 4: 306 chars | has $30: True | FAIL
+
+Criterion 5 (tools.py::search_listings, via price_check.py):
+Query 1: 'vintage graphic tee under $30'  ceiling=30.0  10 results
+  prices: [19.0, 24.0, 18.0, 26.0, 20.0, 15.0, 18.0, 25.0, 12.0, 14.0]
+  over ceiling: none  -> PASS
 ```
 
 ---
@@ -282,16 +307,16 @@ that produced it:
 
      Look for a pattern. Three misses on the same tool is one problem, not
      three. -->
-
+     
 | # | Criterion | Target | Verdict | How I decided |
 |---|---|---|---|---|
-| 1 |  |  |  |  |
-| 2 |  |  |  |  |
-| 3 |  |  |  |  |
-| 4 |  |  |  |  |
-| 5 |  |  |  |  |
+| 1 | A matching query completes all three tools | 4 of 5 | MET (5/5) | All five graphic tee tries returned a fit card. |
+| 2 | An impossible query stops before the second tool | 5 of 5 | MET (5/5) | All five stopped at step 1; suggest_outfit never ran. |
+| 3 | selected_item matches what suggest_outfit received | 5 of 5 | MET (5/5) | Same track jacket title in the search result, selected_item, and suggest_outfit input in all five. I compared titles because the trace shows titles, not ids. |
+| 4 | Fit card under 300 chars, has price, not empty | 4 of 5 | MISSED (2/5) | Tries 1 and 2 passed. Tries 3 and 5 wrote "thirty bucks" with no digits; try 4 was 306 characters. |
+| 5 | Every result under the price ceiling | 5 of 5 | MET (5/5) | Five queries, zero results over the ceiling (price_check.py). |
 
-**Diagnoses**
+**Diagnoses** Criterion 4 missed on 3 of 5 tries. The place is the model's output, and the mechanism is the prompt in tools.py::create_fit_card. It told the model to mention the price but not how to write it, so two cards wrote "thirty bucks" even though the item text said $30.00. It also limited length by sentence count (two to four) with no character limit, so one four-sentence card reached 306 characters. The tool itself worked and returned text every time. Both failure types come from one gap in one prompt, so this is one problem and not three.
 
 
 
@@ -340,41 +365,45 @@ $ python app.py ask 'designer ballgown size XXS under $5' --trace
 
 **Failure modes**
 
-~~~ Empty search (query the data can't match):
+Empty search (a query the data can't match):
+
+~~~
 $ python app.py ask 'designer ballgown size XXS under $5'
 
   No listings matched 'designer ballgown', size XXS, under $5.00. Try a different size, a higher price limit, or different keywords.
+~~~
 
 Empty wardrobe (returns general styling advice, no crash):
+
 ~~~
 $ python app.py ask 'baggy cargo pants under $40' --empty-wardrobe
 (running with an empty wardrobe)
- [1] search_listings (via MCP)
+[1] search_listings (via MCP)
       in:  {'description': 'baggy cargo pants', 'size': None, 'max_price': 40.0}
       out: 3 items: Low-Rise Cargo Pants — Khaki, Corduroy Wide-Leg Pants — Rust, Baggy Carpenter Jeans — Dark Wash
- [2] suggest_outfit
+[2] suggest_outfit
       in:  Low-Rise Cargo Pants — Khaki, wardrobe of 0 items
       out: Hey bestie! Oh, those low-rise khaki cargos are an absolute Y2K dream, and at $27 in fair condition, they’ve g…
- [3] create_fit_card
+[3] create_fit_card
       in:  outfit text + Low-Rise Cargo Pants — Khaki
       out: Scored these khaki low-rise cargos on Poshmark for $27 and I am officially ready for my 2000s off-duty model e…
-      ~~~
-
+~~~
 
 Model unavailable (one character of the key changed in .env, restored afterwards):
- ~~~
+
+~~~
 $ python app.py ask 'oversized denim jacket under $50'
- [1] search_listings (via MCP)
+[1] search_listings (via MCP)
       in:  {'description': 'oversized denim jacket', 'size': None, 'max_price': 50.0}
       out: 10 items: Denim Jacket — Light Wash, Cropped, Oversized Crewneck Sweatshirt — Vintage Navy, Oversized College Crewneck — Faded Red … +7 more
- [2] model call failed
+[2] model call failed
       →    branch: ModelUnavailable, stopping
 
   Found a listing, but the styling model couldn't be reached, so there's no outfit or fit card yet. Check that the API key in .env is correct and that you're online, then run the query again. (Details: The model rejected your API key. Check GEMINI_API_KEY in your .env file, or create a fresh key at aistudio.google.com.)
 ~~~
 
-
 ---
+
 
 ## The Improvement
 
@@ -383,21 +412,21 @@ $ python app.py ask 'oversized denim jacket under $50'
 
      `python run_eval.py --label after` -->
 
-**What I changed:**
+**What I changed:** In tools.py::create_fit_card I added one instruction to the prompt: write the price as digits with a dollar sign, exactly as $XX.XX, and keep the whole caption under 250 characters. Nothing else changed.
 
-**Which failure it was meant to fix:**
+**Which failure it was meant to fix:** Criterion 4 missed at 2 of 5. Two cards spelled the price out ("thirty bucks") and one ran 306 characters. The old prompt limited length by sentence count and did not say how to write the price.
 
 ### Run Log — After
 
 | Criterion | Target | Try 1 | Try 2 | Try 3 | Try 4 | Try 5 | Verdict |
 |---|---|---|---|---|---|---|---|
-| 1.  |  |  |  |  |  |  |  |
-| 2.  |  |  |  |  |  |  |  |
-| 3.  |  |  |  |  |  |  |  |
-| 4.  |  |  |  |  |  |  |  |
-| 5.  |  |  |  |  |  |  |  |
+| 1. A matching query completes all three tools | 4 of 5 | PASS | PASS | PASS | PASS | PASS | MET (5/5) |
+| 2. An impossible query stops before the second tool | 5 of 5 | PASS | PASS | PASS | PASS | PASS | MET (5/5) |
+| 3. selected_item id matches what suggest_outfit received | 5 of 5 | PASS | PASS | PASS | PASS | PASS | MET (5/5) |
+| 4. Fit card under 300 chars, has price, not empty | 4 of 5 | PASS | PASS | PASS | PASS | PASS | MET (5/5) |
+| 5. Every result under the price ceiling | 5 of 5 | PASS | PASS | PASS | PASS | PASS | MET (5/5) |
 
-**Did it help, and how do I know:**
+**Did it help, and how do I know:** Yes, for the criterion it targeted. Criterion 4 went from 2 of 5 (MISSED) to 5 of 5 (MET). Before, tries 3 and 5 spelled the price out and try 4 ran 306 characters. After, all five cards contain "$30.00" and run 162 to 195 characters, and they are not word-for-word identical (check_cards.py output). Criteria 1, 2, 3, and 5 stayed at 5 of 5, so nothing else got worse. Five tries can't separate a true 5 of 5 from a rate near 90 percent. The cards are also more formulaic now: several open with "Scored this ... on Depop for $30.00 and I am obsessed."
 
 <!-- If it made things worse, say that. Honestly reported, that earns full
      credit and is more interesting than one that worked. -->
@@ -408,9 +437,7 @@ $ python app.py ask 'oversized denim jacket under $50'
 
 ## What's Still Broken
 
-<!-- For each criterion still missed: what you'd do, and why you stopped where
-     you did. "I ran out of time" is fine if it's true. Pretending nothing is
-     left is not. -->
+All five criteria are MET after the fix, but I'd still do three things. Criterion 3 compares titles, not ids, because the trace prints titles; a state bug between two items with the same title would slip past it. The fit cards are now more formulaic and less varied, which my criterion doesn't penalize; I'd add a check that the opening sentences differ across five items. Search ranking is loose: "90s track jacket in size M" returned a leather bomber and a silk slip dress below the jacket because "90s" matches in their descriptions. I left these alone because this unit allows one improvement only.
 
 
 

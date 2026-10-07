@@ -135,6 +135,32 @@ def search_listings(
     return [item for _, item in scored[: config.SEARCH_RESULT_LIMIT]]
 
 
+def _describe_listing(item: dict) -> str:
+    parts = [
+        item.get("title", "item"),
+        f"category: {item.get('category')}",
+        f"colors: {', '.join(item.get('colors') or [])}",
+        f"style: {', '.join(item.get('style_tags') or [])}",
+        f"size: {item.get('size')}",
+        f"condition: {item.get('condition')}",
+        f"price: ${float(item.get('price', 0)):.2f}",
+        f"platform: {item.get('platform')}",
+    ]
+    if item.get("brand"):
+        parts.append(f"brand: {item['brand']}")
+    return "; ".join(parts)
+
+
+def _describe_wardrobe_piece(piece: dict) -> str:
+    bits = []
+    for key, value in piece.items():
+        if isinstance(value, list):
+            value = ", ".join(str(v) for v in value)
+        if value:
+            bits.append(f"{key}: {value}")
+    return "; ".join(bits)
+
+
 # ── Tool 2: suggest_outfit ────────────────────────────────────────────────────
 
 def suggest_outfit(new_item: dict, wardrobe: dict) -> str:
@@ -165,8 +191,36 @@ def suggest_outfit(new_item: dict, wardrobe: dict) -> str:
     Test it from a terminal before you move on:
         python -c "from tools import suggest_outfit; from utils.data_loader import get_example_wardrobe, load_listings; print(suggest_outfit(load_listings()[0], get_example_wardrobe()))"
     """
-    # TODO: replace this with your implementation
-    return ""
+
+    items = (wardrobe or {}).get("items") or []
+    item_text = _describe_listing(new_item)
+
+    if not items:
+        prompt = (
+            "You are a friendly thrift stylist. The user is considering this "
+            f"secondhand item:\n{item_text}\n\n"
+            "They haven't told us what's in their wardrobe, so give general "
+            "styling advice: suggest one or two outfits built around this item "
+            "using common basics anyone might own. Keep it under 120 words."
+        )
+    else:
+        owned = "\n".join(f"- {_describe_wardrobe_piece(p)}" for p in items)
+        prompt = (
+            "You are a friendly thrift stylist. The user is considering this "
+            f"secondhand item:\n{item_text}\n\n"
+            f"Here is what they already own:\n{owned}\n\n"
+            "Suggest one or two specific outfits that combine the new item "
+            "with pieces from their wardrobe. Name the owned pieces exactly as "
+            "listed. Do not invent pieces they don't own. Keep it under 150 words."
+        )
+
+    response = generate(prompt)
+    if response and response.strip():
+        return response.strip()
+    return (
+        f"Try styling the {new_item.get('title', 'item')} with simple basics "
+        "in neutral colors and let it be the statement piece."
+    )
 
 
 # ── Tool 3: create_fit_card ───────────────────────────────────────────────────
@@ -205,5 +259,26 @@ def create_fit_card(outfit: str, new_item: dict) -> str:
     Test it from a terminal before you move on:
         python -c "from tools import create_fit_card; from utils.data_loader import load_listings; print(create_fit_card('jeans and white sneakers', load_listings()[0]))"
     """
-    # TODO: replace this with your implementation
-    return ""
+    
+    item_text = _describe_listing(new_item)
+    has_outfit = bool(outfit and outfit.strip())
+
+    prompt = (
+        "Write a two-to-four sentence social media caption, as if the person "
+        "who just thrifted this item were posting it. Sound like a real post, "
+        "not a product description. Mention the item name, its price, and the "
+        "platform once each, and be specific about the vibe. No hashtag spam.\n\n"
+        f"Item: {item_text}\n"
+    )
+    if has_outfit:
+        prompt += f"Outfit idea to reference:\n{outfit.strip()}\n"
+    else:
+        prompt += "No outfit was provided, so write the caption from the item alone.\n"
+
+    response = generate(prompt)
+    if response and response.strip():
+        return response.strip()
+    return (
+        f"Just found the {new_item.get('title', 'item')} for "
+        f"${float(new_item.get('price', 0)):.2f} on {new_item.get('platform', 'a resale site')}."
+    )

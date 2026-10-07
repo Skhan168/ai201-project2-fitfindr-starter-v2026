@@ -134,6 +134,52 @@ $ python -c "from tools import search_listings; r = search_listings('tee', size=
 ```
 $ python -c "from tools import search_listings; print(search_listings('designer ballgown', 'XXS', 5))"
 []
+
+```
+
+```
+$ python -c "from tools import suggest_outfit; from utils.data_loader import get_example_wardrobe, load_listings; print(suggest_outfit(load_listings()[0], get_example_wardrobe()))"
+Hey there! Oh, those vintage Levi's 501s are an absolute Depop holy grail, and at $38 in a W30 L30, that is such a win! Since you already own some amazing basics, these medium-wash jeans will slot right into your rotation and give you that effortless streetwear vibe. 
+
+Here are two fun ways to style them using pieces you already have:
+
+**Look 1: Casual Streetwear**
+*   **New Item:** Vintage Levi's 501 Jeans
+*   **Top:** White ribbed tank top
+*   **Outerwear:** Oversized grey crewneck sweatshirt
+*   **Shoes:** Chunky white sneakers
+*   **Accessories:** Black crossbody bag
+
+**Look 2: Edgy & Relaxed**
+*   **New Item:** Vintage Levi's 501 Jeans
+*   **Top:** Black cropped zip hoodie
+*   **Shoes:** Black combat boots
+*   **Accessories:** Brown leather belt
+
+Which vibe are you leaning toward? Grab them before someone else does!
+
+```
+
+```
+$ python -c "from tools import suggest_outfit; from utils.data_loader import load_listings; print(suggest_outfit(load_listings()[0], {'items': []}))"
+Hey babe! Oh, those vintage 501s are an absolute holy grail find—$38 on Depop is a total steal! That medium wash goeswith literally *everything*. 
+
+Here are two super easy ways to style them using pieces you probably already own:
+
+**1. The Off-Duty Cool Look:**
+Pair them with a classic white baby tee or a simple black tank top. Add some retro sneakers (like Converse or Adidas Sambas), and throw on a black leather jacket or oversized blazer to instantly level it up. 
+
+**2. The Elevated Casual Vibe:**
+Tuck a cozy oversized grey crewneck sweatshirt right into the waistband. Slip on some loafers or ankle boots, and layer with some simple gold jewelry. 
+
+You’ll wear these on repeat, I promise!
+
+```
+
+```
+$ python -c "from tools import create_fit_card; from utils.data_loader import load_listings; print(create_fit_card('jeans and white sneakers', load_listings()[0]))"
+Scored these vintage Levi's 501s on Depop for just $38.00 and the fit is genuinely unreal. Obsessed with the medium wash indigo—they have that perfect, worn-in 90s streetwear vibe. Can't wait to style them with my beat-up white sneakers and a simple tee.
+
 ```
 
 ---
